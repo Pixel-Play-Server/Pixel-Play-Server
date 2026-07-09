@@ -1,7 +1,7 @@
 import Foundation
 
-#if canImport(FFmpegKit)
-import FFmpegKit
+#if canImport(ffmpegkit)
+import ffmpegkit
 #endif
 
 enum FFmpegError: LocalizedError {
@@ -12,7 +12,7 @@ enum FFmpegError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notAvailable:
-            return "FFmpegKit no está disponible. Añade el paquete kingslay/FFmpegKit en Xcode."
+            return "FFmpegKit no está disponible. Añade el paquete ffmpeg-kit-spm en Xcode."
         case .commandFailed(let log):
             return "FFmpeg falló: \(log)"
         case .outputMissing:
@@ -23,30 +23,29 @@ enum FFmpegError: LocalizedError {
 
 struct FFmpegService: Sendable {
     func run(_ arguments: [String]) async throws {
-        #if canImport(FFmpegKit)
-        let exitCode: Int32 = await Task.detached(priority: .userInitiated) {
-            Self.executeFFmpeg(arguments: arguments)
-        }.value
+        let command = arguments.joined(separator: " ")
 
-        guard exitCode == 0 else {
-            throw FFmpegError.commandFailed("ffmpeg terminó con código \(exitCode)")
+        #if canImport(ffmpegkit)
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            FFmpegKit.executeAsync(command) { session in
+                guard let session else {
+                    continuation.resume(throwing: FFmpegError.commandFailed("sesión FFmpeg nula"))
+                    return
+                }
+
+                let returnCode = session.getReturnCode()
+                if ReturnCode.isSuccess(returnCode) {
+                    continuation.resume()
+                } else {
+                    let logs = session.getAllLogsAsString() ?? "sin logs"
+                    continuation.resume(throwing: FFmpegError.commandFailed(logs))
+                }
+            }
         }
         #else
         throw FFmpegError.notAvailable
         #endif
     }
-
-    #if canImport(FFmpegKit)
-    private static func executeFFmpeg(arguments: [String]) -> Int32 {
-        let args = ["ffmpeg"] + arguments
-        let cStrings = args.map { strdup($0) }
-        defer { cStrings.forEach { if let ptr = $0 { free(ptr) } } }
-
-        return cStrings.withUnsafeMutableBufferPointer { buffer in
-            ffmpeg_execute(Int32(buffer.count), buffer.baseAddress)
-        }
-    }
-    #endif
 
     func imageToClip(
         imagePath: String,

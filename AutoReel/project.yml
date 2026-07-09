@@ -7,9 +7,9 @@ options:
   createIntermediateGroups: true
 
 packages:
-  FFmpegKit:
-    url: https://github.com/kingslay/FFmpegKit
-    branch: main
+  FFmpegKitSPM:
+    url: https://github.com/codewithtamim/ffmpeg-kit-spm
+    from: "1.0.1"
 
 targets:
   AutoReel:
@@ -25,8 +25,8 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
     dependencies:
-      - package: FFmpegKit
-        product: FFmpegKit
+      - package: FFmpegKitSPM
+        product: FFmpeg-Kit
     info:
       path: AutoReel/Resources/Info.plist
       properties:

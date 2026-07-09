@@ -86,7 +86,7 @@ AutoReel/
 
 ## FFmpeg en iPhone
 
-Usa [kingslay/FFmpegKit](https://github.com/kingslay/FFmpegKit) vía Swift Package Manager (~60–80 MB en el IPA). El tamaño no importa según el diseño: todo el render ocurre en el dispositivo.
+Usa [ffmpeg-kit-spm](https://github.com/codewithtamim/ffmpeg-kit-spm) vía Swift Package Manager (~60–80 MB en el IPA). El tamaño no importa según el diseño: todo el render ocurre en el dispositivo.
 
 Comandos que ejecuta internamente:
 
