@@ -10,7 +10,7 @@ enum SubtitleGenerator {
             let end = formatASSTime(currentTime + scene.duration)
             let style = styleName(for: scene.subtitleStyle)
             let text = escapeASS(scene.narration)
-            events.append("Dialogue: 0,\(start),\(end),\(style),,0,0,0,,{\fad(200,200)}\(text)")
+            events.append("Dialogue: 0,\(start),\(end),\(style),,0,0,0,,{\\fad(200,200)}\(text)")
             currentTime += scene.duration
         }
 
