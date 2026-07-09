@@ -1,0 +1,41 @@
+name: AutoReel
+options:
+  bundleIdPrefix: com.autoreel
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  FFmpegKitSPM:
+    url: https://github.com/codewithtamim/ffmpeg-kit-spm
+    from: "1.0.1"
+
+targets:
+  AutoReel:
+    type: application
+    platform: iOS
+    sources:
+      - path: AutoReel
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.autoreel.app
+        INFOPLIST_FILE: AutoReel/Resources/Info.plist
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    dependencies:
+      - package: FFmpegKitSPM
+        product: FFmpeg-Kit
+    info:
+      path: AutoReel/Resources/Info.plist
+      properties:
+        UILaunchScreen: {}
+
+schemes:
+  AutoReel:
+    build:
+      targets:
+        AutoReel: all
+    run:
+      config: Debug
