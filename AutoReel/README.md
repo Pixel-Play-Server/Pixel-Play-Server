@@ -39,13 +39,9 @@ Si tu Mac no soporta Xcode reciente, el workflow [`.github/workflows/ios-build.y
 
 **Ejecución manual:** en GitHub → Actions → *iOS Build (AutoReel)* → *Run workflow*.
 
-Tras un build exitoso, descarga el artefacto **`AutoReel-simulator-app`** (`.app` para simulador). Para instalarlo en un simulador con otro Mac:
+Tras un build exitoso, descarga el artefacto **`AutoReel-unsigned-ipa`** y fírmalo con [SideStore](https://sidestore.io/) en tu iPhone.
 
-```bash
-xcrun simctl install booted path/to/AutoReel.app
-```
-
-> Para instalar en un iPhone físico necesitas firma con tu Apple Developer account (Xcode → Signing). El CI genera el binario compilado; la firma para dispositivo la haces localmente o con otro workflow de distribución.
+> El CI compila solo para **dispositivo arm64** (no simulador x86_64). Es el binario correcto para SideStore.
 
 ## Configuración
 

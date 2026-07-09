@@ -66,7 +66,7 @@ jobs:
             -scheme AutoReel \
             -derivedDataPath "$DERIVED_DATA"
 
-      - name: Compilar para iOS (dispositivo, sin firma)
+      - name: Compilar para iPhone (arm64, sin firma)
         run: |
           set -o pipefail
           xcodebuild build \
@@ -75,48 +75,37 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$DERIVED_DATA" \
+            ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             | tee xcodebuild-device.log | xcbeautify --renderer github-actions
 
-      - name: Compilar para simulador iOS
+      - name: Empaquetar IPA sin firmar (SideStore)
         run: |
-          set -o pipefail
-          xcodebuild build \
-            -project AutoReel.xcodeproj \
-            -scheme AutoReel \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$DERIVED_DATA" \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee xcodebuild-sim.log | xcbeautify --renderer github-actions
-
-      - name: Preparar artefacto (.app simulador)
-        run: |
-          APP_PATH=$(find "$DERIVED_DATA/Build/Products" -name 'AutoReel.app' -type d | head -n 1)
+          APP_PATH=$(find "$DERIVED_DATA/Build/Products" -path '*Release-iphoneos/AutoReel.app' -type d | head -n 1)
           if [ -z "$APP_PATH" ]; then
-            echo "No se encontró AutoReel.app"
-            find "$DERIVED_DATA" -name '*.app' || true
+            echo "No se encontró AutoReel.app (Release-iphoneos)"
+            find "$DERIVED_DATA/Build/Products" -name '*.app' || true
             exit 1
           fi
-          mkdir -p build-artifact
-          cp -R "$APP_PATH" build-artifact/
-          echo "APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
+          mkdir -p build-artifact/Payload
+          cp -R "$APP_PATH" build-artifact/Payload/
+          cd build-artifact
+          zip -r AutoReel-unsigned.ipa Payload
+          echo "IPA creado para firmar con SideStore"
 
-      - name: Publicar AutoReel.app
+      - name: Publicar IPA sin firmar
         uses: actions/upload-artifact@v4
         with:
-          name: AutoReel-simulator-app
-          path: AutoReel/build-artifact/AutoReel.app
-          retention-days: 7
+          name: AutoReel-unsigned-ipa
+          path: AutoReel/build-artifact/AutoReel-unsigned.ipa
+          retention-days: 14
 
       - name: Subir logs si falla
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: xcodebuild-logs
-          path: |
-            AutoReel/xcodebuild-device.log
-            AutoReel/xcodebuild-sim.log
+          path: AutoReel/xcodebuild-device.log
           if-no-files-found: ignore
