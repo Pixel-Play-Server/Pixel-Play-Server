@@ -24,20 +24,24 @@ enum FFmpegError: LocalizedError {
 struct FFmpegService: Sendable {
     func run(_ arguments: [String]) async throws {
         let command = arguments.joined(separator: " ")
+        AppLogger.log("FFmpeg: \(command)")
 
         #if canImport(ffmpegkit)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             FFmpegKit.executeAsync(command) { session in
                 guard let session else {
+                    AppLogger.error("FFmpeg sesión nula")
                     continuation.resume(throwing: FFmpegError.commandFailed("sesión FFmpeg nula"))
                     return
                 }
 
                 let returnCode = session.getReturnCode()
                 if ReturnCode.isSuccess(returnCode) {
+                    AppLogger.log("FFmpeg OK (código 0)")
                     continuation.resume()
                 } else {
                     let logs = session.getAllLogsAsString() ?? "sin logs"
+                    AppLogger.error("FFmpeg falló | código: \(returnCode?.getValue() ?? -1) | \(logs.prefix(500))")
                     continuation.resume(throwing: FFmpegError.commandFailed(logs))
                 }
             }

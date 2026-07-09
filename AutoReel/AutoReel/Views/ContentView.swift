@@ -16,13 +16,20 @@ struct ContentView: View {
             }
             .navigationTitle("AutoReel")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack {
+                    NavigationLink {
+                        LogsView()
+                    } label: {
+                        Image(systemName: "doc.text")
+                    }
                     Button {
                         showSettings = true
                     } label: {
                         Image(systemName: "gearshape")
                     }
                 }
+            }
             }
             .sheet(isPresented: $showSettings) {
                 NavigationStack {

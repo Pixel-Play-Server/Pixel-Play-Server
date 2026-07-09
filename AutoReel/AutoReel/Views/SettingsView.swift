@@ -38,6 +38,17 @@ struct SettingsView: View {
                     Text(message).font(.footnote)
                 }
             }
+
+            Section("Logs de depuración") {
+                NavigationLink {
+                    LogsView()
+                } label: {
+                    Label("Ver y compartir logs", systemImage: "doc.text")
+                }
+                Text(AppLogger.filesAppPathHint)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle("API Keys")
         .toolbar {

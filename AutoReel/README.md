@@ -53,6 +53,18 @@ Tras un build exitoso, descarga el artefacto **`AutoReel-unsigned-ipa`** y fírm
 
 Al abrir la app por primera vez, introduce tus API keys en **Ajustes**. Se guardan en el **Keychain** del dispositivo.
 
+## Logs de depuración (sin Mac)
+
+La app guarda logs en la carpeta **Documents**, visible desde la app **Archivos** de iOS:
+
+```
+Archivos → En mi iPhone → AutoReel → AutoReel/logs/app.log
+```
+
+También puedes verlos dentro de la app: icono **📄** en la barra superior → *Ver y compartir logs*.
+
+Útil si compilas solo con GitHub Actions y no tienes Xcode/Mac para ver crashes.
+
 ## Flujo automático
 
 ```
