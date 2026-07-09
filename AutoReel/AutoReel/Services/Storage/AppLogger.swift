@@ -125,15 +125,7 @@ enum AppLogger {
     }
 
     private static func installExceptionHandler() {
-        NSSetUncaughtExceptionHandler { exception in
-            let report = """
-            UNCAUGHT EXCEPTION: \(exception.name.rawValue)
-            Reason: \(exception.reason ?? "desconocida")
-            Stack:
-            \(exception.callStackSymbols.joined(separator: "\n"))
-            """
-            appendSync("[\(isoFormatter.string(from: Date()))] [FATAL]\n\(report)\n")
-        }
+        NSSetUncaughtExceptionHandler(AppLoggerUncaughtExceptionHandler)
     }
 
     private static func rotateIfNeeded() {
@@ -150,7 +142,7 @@ enum AppLogger {
         }
     }
 
-    private static func appendSync(_ text: String) {
+    fileprivate static func appendSync(_ text: String) {
         let url = mainLogURL
         if FileManager.default.fileExists(atPath: url.path) {
             guard let handle = try? FileHandle(forWritingTo: url) else { return }
@@ -163,4 +155,16 @@ enum AppLogger {
             try? text.write(to: url, atomically: true, encoding: .utf8)
         }
     }
+}
+
+private func AppLoggerUncaughtExceptionHandler(_ exception: NSException) {
+    let timestamp = ISO8601DateFormatter().string(from: Date())
+    let report = """
+    [\(timestamp)] [FATAL]
+    UNCAUGHT EXCEPTION: \(exception.name.rawValue)
+    Reason: \(exception.reason ?? "desconocida")
+    Stack:
+    \(exception.callStackSymbols.joined(separator: "\n"))
+    """
+    AppLogger.appendSync(report + "\n")
 }
