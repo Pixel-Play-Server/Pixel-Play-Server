@@ -66,7 +66,7 @@ jobs:
             -scheme AutoReel \
             -derivedDataPath "$DERIVED_DATA"
 
-      - name: Compilar para iPhone (arm64, sin firma)
+      - name: Compilar para iPhone (arm64, ad-hoc)
         run: |
           set -o pipefail
           xcodebuild build \
@@ -76,24 +76,30 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$DERIVED_DATA" \
             ARCHS=arm64 \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_IDENTITY=- \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             | tee xcodebuild-device.log | xcbeautify --renderer github-actions
+
+      - name: Embeber frameworks FFmpeg (fix crash al iniciar)
+        run: |
+          APP_PATH=$(find "$DERIVED_DATA/Build/Products" -path '*Release-iphoneos/AutoReel.app' -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "No se encontró AutoReel.app"
+            exit 1
+          fi
+          chmod +x scripts/embed-frameworks.sh
+          ./scripts/embed-frameworks.sh "$APP_PATH" "$DERIVED_DATA"
 
       - name: Empaquetar IPA sin firmar (SideStore)
         run: |
           APP_PATH=$(find "$DERIVED_DATA/Build/Products" -path '*Release-iphoneos/AutoReel.app' -type d | head -n 1)
-          if [ -z "$APP_PATH" ]; then
-            echo "No se encontró AutoReel.app (Release-iphoneos)"
-            find "$DERIVED_DATA/Build/Products" -name '*.app' || true
-            exit 1
-          fi
           mkdir -p build-artifact/Payload
           cp -R "$APP_PATH" build-artifact/Payload/
           cd build-artifact
           zip -r AutoReel-unsigned.ipa Payload
-          echo "IPA creado para firmar con SideStore"
+          echo "IPA listo (build 2+ con frameworks embebidos)"
 
       - name: Publicar IPA sin firmar
         uses: actions/upload-artifact@v4

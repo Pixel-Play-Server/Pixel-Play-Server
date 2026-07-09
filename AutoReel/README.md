@@ -41,7 +41,13 @@ Si tu Mac no soporta Xcode reciente, el workflow [`.github/workflows/ios-build.y
 
 Tras un build exitoso, descarga el artefacto **`AutoReel-unsigned-ipa`** y fírmalo con [SideStore](https://sidestore.io/) en tu iPhone.
 
-> El CI compila solo para **dispositivo arm64** (no simulador x86_64). Es el binario correcto para SideStore.
+> El CI embebe y firma ad-hoc todos los frameworks de FFmpegKit dentro del `.app`. Sin esto, la app crashea al abrir (`dyld: Library not loaded`).
+
+### Si crashea al iniciar
+
+1. Asegúrate de usar un IPA **reciente** (build ≥ 2 en Ajustes → General → Almacenamiento si ves la versión).
+2. Reinstala desde SideStore tras descargar el artefacto nuevo de GitHub Actions.
+3. Si sigue fallando, conecta el iPhone a un Mac y revisa **Consola.app** → crash log de `AutoReel`.
 
 ## Configuración
 
