@@ -57,6 +57,7 @@ struct VideoScript: Codable, Sendable {
 }
 
 struct ResolvedScene: Identifiable, Sendable {
+    var id: Int { plan.id }
     let plan: ScenePlan
     let imageURL: URL
     let localImagePath: String

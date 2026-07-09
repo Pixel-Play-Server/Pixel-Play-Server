@@ -9,7 +9,8 @@ struct GenerationProgressView: View {
 
             Image(systemName: "wand.and.stars")
                 .font(.system(size: 56))
-                .symbolEffect(.pulse)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.purple)
 
             Text("Generando tu reel")
                 .font(.title2.bold())

@@ -23,24 +23,30 @@ enum FFmpegError: LocalizedError {
 
 struct FFmpegService: Sendable {
     func run(_ arguments: [String]) async throws {
-        let command = arguments.joined(separator: " ")
-
         #if canImport(FFmpegKit)
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            FFmpegKit.executeAsync(command) { session in
-                let returnCode = session?.getReturnCode()
-                if ReturnCode.isSuccess(returnCode) {
-                    continuation.resume()
-                } else {
-                    let logs = session?.getAllLogsAsString() ?? "sin logs"
-                    continuation.resume(throwing: FFmpegError.commandFailed(logs))
-                }
-            }
+        let exitCode: Int32 = await Task.detached(priority: .userInitiated) {
+            Self.executeFFmpeg(arguments: arguments)
+        }.value
+
+        guard exitCode == 0 else {
+            throw FFmpegError.commandFailed("ffmpeg terminó con código \(exitCode)")
         }
         #else
         throw FFmpegError.notAvailable
         #endif
     }
+
+    #if canImport(FFmpegKit)
+    private static func executeFFmpeg(arguments: [String]) -> Int32 {
+        let args = ["ffmpeg"] + arguments
+        let cStrings = args.map { strdup($0) }
+        defer { cStrings.forEach { if let ptr = $0 { free(ptr) } } }
+
+        return cStrings.withUnsafeMutableBufferPointer { buffer in
+            ffmpeg_execute(Int32(buffer.count), buffer.baseAddress)
+        }
+    }
+    #endif
 
     func imageToClip(
         imagePath: String,
