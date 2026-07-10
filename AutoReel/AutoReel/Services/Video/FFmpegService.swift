@@ -149,7 +149,14 @@ struct FFmpegService: Sendable {
     }
 
     private func quote(_ value: String) -> String {
-        if value.contains(" ") { return "\"\(value)\"" }
-        return value
+        let needsQuotes = value.contains(" ")
+            || value.contains(",")
+            || value.contains("(")
+            || value.contains("=")
+        guard needsQuotes else { return value }
+        let escaped = value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\"\(escaped)\""
     }
 }

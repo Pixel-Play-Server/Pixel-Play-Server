@@ -37,7 +37,7 @@ targets:
       path: AutoReel/Resources/Info.plist
       properties:
         CFBundleShortVersionString: "1.0.0"
-        CFBundleVersion: "10"
+        CFBundleVersion: "11"
         UILaunchScreen: {}
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
