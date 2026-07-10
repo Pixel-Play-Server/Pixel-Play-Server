@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GenerationProgressView: View {
     let progress: GenerationProgress
+    var onCancel: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 28) {
@@ -31,6 +32,16 @@ struct GenerationProgressView: View {
             }
             .padding()
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+
+            if let onCancel {
+                Button(role: .destructive) {
+                    onCancel()
+                } label: {
+                    Label("Cancelar", systemImage: "xmark.circle")
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 32)
+            }
 
             Spacer()
         }

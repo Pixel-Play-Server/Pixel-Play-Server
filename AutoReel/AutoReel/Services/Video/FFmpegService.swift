@@ -27,8 +27,9 @@ struct FFmpegService: Sendable {
         AppLogger.log("FFmpeg: \(command)")
 
         #if canImport(ffmpegkit)
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            FFmpegKit.executeAsync(command) { session in
+        try await TaskTimeout.run(seconds: 300, step: "comando FFmpeg") {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                FFmpegKit.executeAsync(command) { session in
                 guard let session else {
                     AppLogger.error("FFmpeg sesión nula")
                     continuation.resume(throwing: FFmpegError.commandFailed("sesión FFmpeg nula"))
@@ -44,6 +45,7 @@ struct FFmpegService: Sendable {
                     AppLogger.error("FFmpeg falló | código: \(returnCode?.getValue() ?? -1) | \(logs.prefix(500))")
                     continuation.resume(throwing: FFmpegError.commandFailed(logs))
                 }
+            }
             }
         }
         #else

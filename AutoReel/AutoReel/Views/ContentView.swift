@@ -55,7 +55,9 @@ struct ContentView: View {
                 PromptView(viewModel: generator)
             }
         default:
-            GenerationProgressView(progress: generator.progress)
+            GenerationProgressView(progress: generator.progress) {
+                generator.cancel()
+            }
         }
     }
 }

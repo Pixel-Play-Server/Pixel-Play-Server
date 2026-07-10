@@ -45,7 +45,7 @@ struct PexelsClient: Sendable {
         var request = URLRequest(url: components.url!)
         request.setValue(apiKey, forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await HTTPClient.session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw PexelsError.noResults
         }
@@ -59,7 +59,7 @@ struct PexelsClient: Sendable {
         let urlString = photo.src.portrait ?? photo.src.large2x
         guard let url = URL(string: urlString) else { throw PexelsError.downloadFailed }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await HTTPClient.session.data(from: url)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw PexelsError.downloadFailed
         }

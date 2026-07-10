@@ -57,7 +57,7 @@ struct ElevenLabsClient: Sendable {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await HTTPClient.session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw ElevenLabsError.invalidResponse }
 
         guard (200...299).contains(http.statusCode) else {

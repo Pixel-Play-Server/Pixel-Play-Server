@@ -8,6 +8,7 @@ final class GeneratorViewModel: ObservableObject {
 
     let orchestrator = AIOrchestrator()
     private var cancellables = Set<AnyCancellable>()
+    private var generationTask: Task<Void, Never>?
 
     var progress: GenerationProgress { orchestrator.progress }
 
@@ -17,6 +18,7 @@ final class GeneratorViewModel: ObservableObject {
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
     }
+
     var isGenerating: Bool {
         let step = orchestrator.progress.step
         return step != .idle && step != .completed && step != .failed
@@ -25,12 +27,22 @@ final class GeneratorViewModel: ObservableObject {
     func generate() {
         guard !config.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         config.voiceID = selectedVoiceID
-        Task {
+        generationTask?.cancel()
+        generationTask = Task {
             await orchestrator.generate(config: config)
         }
     }
 
+    func cancel() {
+        generationTask?.cancel()
+        generationTask = nil
+        orchestrator.reset()
+        AppLogger.log("Usuario canceló la generación", level: "WARN")
+    }
+
     func reset() {
+        generationTask?.cancel()
+        generationTask = nil
         orchestrator.reset()
     }
 }

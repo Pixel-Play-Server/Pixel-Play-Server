@@ -51,7 +51,7 @@ struct UnsplashClient: Sendable {
         var request = URLRequest(url: components.url!)
         request.setValue("Client-ID \(apiKey)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await HTTPClient.session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw UnsplashError.noResults
         }
@@ -63,7 +63,7 @@ struct UnsplashClient: Sendable {
 
     func download(photo: UnsplashPhoto) async throws -> Data {
         guard let url = URL(string: photo.urls.regular) else { throw UnsplashError.downloadFailed }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await HTTPClient.session.data(from: url)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw UnsplashError.downloadFailed
         }

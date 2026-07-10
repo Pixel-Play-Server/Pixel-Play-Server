@@ -10,10 +10,10 @@ enum NIMModels {
 
     /// Guiones JSON: calidad de instrucción + velocidad razonable en móvil.
     static let scriptGeneration: [String] = [
-        "meta/llama-3.3-70b-instruct",       // Mejor equilibrio calidad/velocidad para JSON
-        "meta/llama-3.1-70b-instruct",       // Fallback sólido
-        "z-ai/glm-5.2",                      // Muy capaz; streaming evita timeout
-        "nvidia/nemotron-mini-4b-instruct"   // Rápido si los grandes fallan
+        "meta/llama-3.1-70b-instruct",       // Más rápido que 3.3, buen JSON
+        "nvidia/nemotron-mini-4b-instruct",  // Muy rápido
+        "meta/llama-3.3-70b-instruct",       // Calidad alta si hay tiempo
+        "z-ai/glm-5.2"                       // Máxima calidad (lento)
     ]
 
     /// Ranking de imágenes: respuesta de 1 dígito, modelo pequeño basta.
