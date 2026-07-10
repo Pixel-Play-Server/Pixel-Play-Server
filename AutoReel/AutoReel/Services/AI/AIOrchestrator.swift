@@ -48,7 +48,7 @@ final class AIOrchestrator: ObservableObject {
 
             AppLogger.log("Paso 3/4: síntesis de voz ElevenLabs")
             let voiceURL = try await TaskTimeout.run(seconds: 180, step: "voz ElevenLabs") {
-                try await elevenLabs.synthesize(
+                try await self.elevenLabs.synthesize(
                     text: script.fullNarration,
                     voiceID: config.voiceID,
                     projectID: projectID
@@ -63,7 +63,7 @@ final class AIOrchestrator: ObservableObject {
 
             AppLogger.log("Paso 4/4: pipeline FFmpeg")
             let outputURL = try await TaskTimeout.run(seconds: 600, step: "montaje FFmpeg") {
-                try await videoPipeline.render(
+                try await self.videoPipeline.render(
                     script: script,
                     scenes: resolvedScenes,
                     voiceURL: voiceURL,
