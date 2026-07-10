@@ -15,21 +15,22 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("AutoReel")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack {
-                    NavigationLink {
-                        LogsView()
-                    } label: {
-                        Image(systemName: "doc.text")
-                    }
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 16) {
+                        NavigationLink {
+                            LogsView()
+                        } label: {
+                            Image(systemName: "doc.text")
+                        }
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
                     }
                 }
-            }
             }
             .sheet(isPresented: $showSettings) {
                 NavigationStack {
@@ -37,6 +38,7 @@ struct ContentView: View {
                 }
             }
         }
+        .tint(AppTheme.accent)
     }
 
     @ViewBuilder

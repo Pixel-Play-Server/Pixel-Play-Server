@@ -66,6 +66,7 @@ struct ResolvedScene: Identifiable, Sendable {
 struct GenerationProgress: Sendable {
     enum Step: String, Sendable {
         case idle
+        case warmingUpAI
         case generatingScript
         case fetchingImages
         case generatingVoice

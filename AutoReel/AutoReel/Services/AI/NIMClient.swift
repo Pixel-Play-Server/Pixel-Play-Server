@@ -34,14 +34,40 @@ struct NIMChatClient: Sendable {
         messages: [[String: String]],
         temperature: Double,
         maxTokens: Int,
-        seed: Int? = 42
+        seed: Int? = 42,
+        preferredModel: String? = nil
     ) async throws -> String {
+        let result = try await completeWithModel(
+            task: task,
+            messages: messages,
+            temperature: temperature,
+            maxTokens: maxTokens,
+            seed: seed,
+            preferredModel: preferredModel
+        )
+        return result.content
+    }
+
+    func completeWithModel(
+        task: NIMModels.Task,
+        messages: [[String: String]],
+        temperature: Double,
+        maxTokens: Int,
+        seed: Int? = 42,
+        preferredModel: String? = nil
+    ) async throws -> (model: String, content: String) {
         guard let apiKey = KeychainService.load(.nvidia), !apiKey.isEmpty else {
             throw NIMError.missingAPIKey
         }
 
+        var models = NIMModels.candidates(for: task)
+        if let preferredModel, let index = models.firstIndex(of: preferredModel) {
+            models.remove(at: index)
+            models.insert(preferredModel, at: 0)
+        }
+
         var lastError: Error?
-        for model in NIMModels.candidates(for: task) {
+        for model in models {
             let modelMaxTokens = NIMModels.maxOutputTokens(for: model, task: task)
             let effectiveMaxTokens = min(maxTokens, modelMaxTokens)
             do {
@@ -55,7 +81,7 @@ struct NIMChatClient: Sendable {
                     seed: seed
                 )
                 AppLogger.log("NVIDIA NIM OK con modelo: \(model) (\(content.count) chars)")
-                return content
+                return (model, content)
             } catch {
                 lastError = error
                 AppLogger.error("Modelo \(model) falló", error: error)
@@ -137,7 +163,22 @@ struct NIMChatClient: Sendable {
 struct NIMClient: Sendable {
     private let chat = NIMChatClient()
 
-    func generateScript(config: GenerationConfig) async throws -> VideoScript {
+    /// Ping genérico para despertar la API; devuelve el modelo que respondió.
+    func warmup() async throws -> String {
+        let (model, response) = try await chat.completeWithModel(
+            task: .warmup,
+            messages: [
+                ["role": "user", "content": "Responde únicamente con la palabra LISTO si me escuchas."]
+            ],
+            temperature: 0,
+            maxTokens: 8,
+            seed: nil
+        )
+        AppLogger.log("NVIDIA warmup OK | modelo: \(model) | respuesta: \(response.prefix(20))")
+        return model
+    }
+
+    func generateScript(config: GenerationConfig, preferredModel: String? = nil) async throws -> VideoScript {
         let systemPrompt = """
         Eres un director creativo de reels virales. Devuelve SOLO JSON válido sin markdown.
         El JSON debe seguir este esquema exacto:
@@ -176,7 +217,8 @@ struct NIMClient: Sendable {
                 ["role": "user", "content": userPrompt]
             ],
             temperature: 0.7,
-            maxTokens: 2048
+            maxTokens: 2048,
+            preferredModel: preferredModel
         )
 
         return try parseScriptJSON(content)

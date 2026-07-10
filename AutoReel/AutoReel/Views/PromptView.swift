@@ -5,18 +5,21 @@ struct PromptView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 header
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("¿De qué trata tu reel?")
-                        .font(.headline)
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Tema del reel", systemImage: "text.quote")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.accent)
                     TextField("Ej: 5 tips de productividad para estudiantes", text: $viewModel.config.topic, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
                         .lineLimit(3...6)
+                        .padding(12)
+                        .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
                 }
+                .appCard()
 
-                optionSection(title: "Duración") {
+                optionCard(title: "Duración", icon: "clock") {
                     Picker("Duración", selection: $viewModel.config.duration) {
                         ForEach(VideoDuration.allCases) { duration in
                             Text(duration.label).tag(duration)
@@ -25,7 +28,7 @@ struct PromptView: View {
                     .pickerStyle(.segmented)
                 }
 
-                optionSection(title: "Tono") {
+                optionCard(title: "Tono", icon: "megaphone") {
                     Picker("Tono", selection: $viewModel.config.tone) {
                         ForEach(VideoTone.allCases) { tone in
                             Text(tone.label).tag(tone)
@@ -34,7 +37,7 @@ struct PromptView: View {
                     .pickerStyle(.menu)
                 }
 
-                optionSection(title: "Formato") {
+                optionCard(title: "Formato", icon: "rectangle.portrait") {
                     Picker("Formato", selection: $viewModel.config.format) {
                         ForEach(VideoFormat.allCases) { format in
                             Text(format.label).tag(format)
@@ -43,7 +46,7 @@ struct PromptView: View {
                     .pickerStyle(.segmented)
                 }
 
-                optionSection(title: "Narración") {
+                optionCard(title: "Narración", icon: "waveform") {
                     Picker("Motor de voz", selection: $viewModel.selectedVoiceProvider) {
                         ForEach(VoiceProvider.allCases) { provider in
                             Text(provider.label).tag(provider)
@@ -75,9 +78,15 @@ struct PromptView: View {
                 }
 
                 if let error = viewModel.progress.error {
-                    Text(error)
-                        .foregroundStyle(.red)
-                        .font(.footnote)
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.footnote)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                 }
 
                 Button {
@@ -86,42 +95,72 @@ struct PromptView: View {
                     Label("Generar video con IA", systemImage: "sparkles")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
                 .disabled(viewModel.config.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isGenerating)
 
                 automationNote
             }
             .padding()
         }
+        .screenBackground()
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Todo automático")
-                .font(.title2.bold())
-            Text("La IA escribe el guion, descarga fotos de internet, genera la voz y FFmpeg monta el video en tu iPhone.")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "film.stack")
+                    .font(.title)
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(AppTheme.heroGradient, in: RoundedRectangle(cornerRadius: 14))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("AutoReel")
+                        .font(.title2.bold())
+                    Text("Todo automático en tu iPhone")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text("La IA escribe el guion, busca fotos, genera la voz y FFmpeg monta el video.")
+                .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+        .appCard()
     }
 
     private var automationNote: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("NVIDIA NIM → guion y escenas", systemImage: "brain")
-            Label("Pexels / Unsplash → imágenes", systemImage: "photo.on.rectangle")
-            Label("Voz del iPhone (gratis) o ElevenLabs", systemImage: "waveform")
-            Label("FFmpeg on-device → export final", systemImage: "film")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Pipeline automático")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            flowRow("NVIDIA NIM", "guion y escenas", icon: "brain")
+            flowRow("Pexels", "imágenes", icon: "photo.on.rectangle")
+            flowRow("iPhone / ElevenLabs", "narración", icon: "waveform")
+            flowRow("FFmpeg", "video final", icon: "film")
         }
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .appCard()
+    }
+
+    private func flowRow(_ title: String, _ subtitle: String, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.medium))
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
     }
 
     @ViewBuilder
-    private func optionSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
+    private func optionCard<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: icon)
+                .font(.subheadline.weight(.semibold))
             content()
         }
+        .appCard()
     }
 }

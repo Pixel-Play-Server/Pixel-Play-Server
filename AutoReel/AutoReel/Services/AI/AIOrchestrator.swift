@@ -12,14 +12,25 @@ final class AIOrchestrator: ObservableObject {
     func generate(config: GenerationConfig) async {
         let projectID = UUID().uuidString
         AppLogger.log("Generación iniciada | tema: \(config.topic) | \(config.duration.label) | \(config.format.label)")
-        progress = GenerationProgress(step: .generatingScript, progress: 0.05, message: "La IA escribe el guion… No cierres la app.")
+        progress = GenerationProgress(step: .warmingUpAI, progress: 0.02, message: "Conectando con la IA…")
 
         do {
             try Task.checkCancellation()
 
+            AppLogger.log("Paso 0/4: inicialización NVIDIA NIM (warmup)")
+            let warmedModel = try await TaskTimeout.run(seconds: 45, step: "inicialización NVIDIA") {
+                try await self.nim.warmup()
+            }
+            AppLogger.log("Warmup listo, usando modelo prioritario: \(warmedModel)")
+
+            try Task.checkCancellation()
+            progress.step = .generatingScript
+            progress.progress = 0.08
+            progress.message = "La IA escribe el guion… No cierres la app."
+
             AppLogger.log("Paso 1/4: generando guion con NVIDIA NIM (modelo auto)")
             let script = try await TaskTimeout.run(seconds: 300, step: "guion NVIDIA") {
-                try await self.nim.generateScript(config: config)
+                try await self.nim.generateScript(config: config, preferredModel: warmedModel)
             }
             try Task.checkCancellation()
 

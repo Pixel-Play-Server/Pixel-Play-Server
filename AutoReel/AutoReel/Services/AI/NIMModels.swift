@@ -4,9 +4,17 @@ import Foundation
 /// La app prueba en orden hasta que uno responde (streaming evita timeouts).
 enum NIMModels {
     enum Task: Sendable {
+        case warmup
         case scriptGeneration
         case imageRanking
     }
+
+    /// Ping rápido para despertar la API antes del guion largo.
+    static let warmup: [String] = [
+        "nvidia/nemotron-mini-4b-instruct",
+        "meta/llama-3.1-8b-instruct",
+        "meta/llama-3.1-70b-instruct"
+    ]
 
     /// Guiones JSON: calidad de instrucción + velocidad razonable en móvil.
     static let scriptGeneration: [String] = [
@@ -25,6 +33,7 @@ enum NIMModels {
 
     static func candidates(for task: Task) -> [String] {
         switch task {
+        case .warmup: return warmup
         case .scriptGeneration: return scriptGeneration
         case .imageRanking: return imageRanking
         }
@@ -33,6 +42,8 @@ enum NIMModels {
     /// Límite de tokens de salida según contexto del modelo (evita HTTP 400 en modelos pequeños).
     static func maxOutputTokens(for model: String, task: Task) -> Int {
         switch task {
+        case .warmup:
+            return 16
         case .scriptGeneration:
             if model.contains("nemotron-mini") { return 896 }
             if model.contains("8b-instruct") { return 1536 }
