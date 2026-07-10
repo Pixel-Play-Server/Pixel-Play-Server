@@ -45,7 +45,7 @@ final class AIOrchestrator: ObservableObject {
             progress.step = .generatingVoice
             progress.progress = 0.42
             let voiceLabel = config.voiceProvider == .elevenLabs ? "ElevenLabs" : "iPhone (gratis)"
-            progress.message = "Generando voz con \(voiceLabel)…"
+            progress.message = "Generando voz (\(voiceLabel))… No cierres la app."
 
             AppLogger.log("Paso 3/4: síntesis de voz (\(voiceLabel))")
             let voiceURL = try await TaskTimeout.run(seconds: 180, step: "voz \(voiceLabel)") {
