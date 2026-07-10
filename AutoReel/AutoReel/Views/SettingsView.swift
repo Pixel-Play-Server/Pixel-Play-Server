@@ -18,8 +18,11 @@ struct SettingsView: View {
                 Link("Obtener en build.nvidia.com", destination: URL(string: "https://build.nvidia.com")!)
             }
 
-            Section("ElevenLabs") {
+            Section("ElevenLabs (opcional, de pago)") {
                 SecureField("API Key", text: $settings.elevenLabsKey)
+                Text("Solo si eliges ElevenLabs al generar. Por defecto la app usa la voz gratis del iPhone.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 Link("Obtener en elevenlabs.io", destination: URL(string: "https://elevenlabs.io")!)
             }
 

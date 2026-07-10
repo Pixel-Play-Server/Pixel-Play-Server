@@ -6,7 +6,7 @@ final class AIOrchestrator: ObservableObject {
 
     private let nim = NIMClient()
     private let imageFetcher = ImageFetcher()
-    private let elevenLabs = ElevenLabsClient()
+    private let voiceSynthesis = VoiceSynthesisService()
     private let videoPipeline = VideoPipeline()
 
     func generate(config: GenerationConfig) async {
@@ -44,13 +44,14 @@ final class AIOrchestrator: ObservableObject {
             try Task.checkCancellation()
             progress.step = .generatingVoice
             progress.progress = 0.42
-            progress.message = "Generando voz con ElevenLabs…"
+            let voiceLabel = config.voiceProvider == .elevenLabs ? "ElevenLabs" : "iPhone (gratis)"
+            progress.message = "Generando voz con \(voiceLabel)…"
 
-            AppLogger.log("Paso 3/4: síntesis de voz ElevenLabs")
-            let voiceURL = try await TaskTimeout.run(seconds: 180, step: "voz ElevenLabs") {
-                try await self.elevenLabs.synthesize(
+            AppLogger.log("Paso 3/4: síntesis de voz (\(voiceLabel))")
+            let voiceURL = try await TaskTimeout.run(seconds: 180, step: "voz \(voiceLabel)") {
+                try await self.voiceSynthesis.synthesize(
                     text: script.fullNarration,
-                    voiceID: config.voiceID,
+                    config: config,
                     projectID: projectID
                 )
             }

@@ -61,11 +61,26 @@ enum VideoFormat: String, CaseIterable, Identifiable {
     }
 }
 
+enum VoiceProvider: String, CaseIterable, Identifiable {
+    case system
+    case elevenLabs
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .system: return "Gratis (iPhone)"
+        case .elevenLabs: return "ElevenLabs (de pago)"
+        }
+    }
+}
+
 struct GenerationConfig {
     var topic: String
     var duration: VideoDuration
     var tone: VideoTone
     var format: VideoFormat
+    var voiceProvider: VoiceProvider
     var voiceID: String
     var language: String
 
@@ -74,7 +89,8 @@ struct GenerationConfig {
         duration: .thirty,
         tone: .viral,
         format: .reels,
-        voiceID: "spanish_female",
+        voiceProvider: .system,
+        voiceID: SystemVoice.defaultID(for: "es"),
         language: "es"
     )
 }

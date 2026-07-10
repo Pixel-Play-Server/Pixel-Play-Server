@@ -56,7 +56,7 @@ enum KeychainService {
     }
 
     static var hasRequiredKeys: Bool {
-        load(.nvidia) != nil && load(.elevenLabs) != nil && load(.pexels) != nil
+        load(.nvidia) != nil && load(.pexels) != nil
     }
 }
 

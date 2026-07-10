@@ -27,7 +27,7 @@ struct GenerationProgressView: View {
             VStack(alignment: .leading, spacing: 10) {
                 stepRow("Guion IA", done: progress.progress >= 0.15)
                 stepRow("Imágenes web", done: progress.progress >= 0.4)
-                stepRow("Voz ElevenLabs", done: progress.progress >= 0.5)
+                stepRow("Voz / narración", done: progress.progress >= 0.5)
                 stepRow("FFmpeg en iPhone", done: progress.progress >= 0.9)
             }
             .padding()

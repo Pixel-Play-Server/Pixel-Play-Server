@@ -4,7 +4,9 @@ import Combine
 @MainActor
 final class GeneratorViewModel: ObservableObject {
     @Published var config = GenerationConfig.default
-    @Published var selectedVoiceID = ElevenLabsVoice.presets[3].id
+    @Published var selectedVoiceProvider: VoiceProvider = .system
+    @Published var selectedSystemVoiceID = SystemVoice.defaultID(for: "es")
+    @Published var selectedElevenLabsVoiceID = ElevenLabsVoice.presets[3].id
 
     let orchestrator = AIOrchestrator()
     private var cancellables = Set<AnyCancellable>()
@@ -26,7 +28,10 @@ final class GeneratorViewModel: ObservableObject {
 
     func generate() {
         guard !config.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        config.voiceID = selectedVoiceID
+        config.voiceProvider = selectedVoiceProvider
+        config.voiceID = selectedVoiceProvider == .elevenLabs
+            ? selectedElevenLabsVoiceID
+            : selectedSystemVoiceID
         generationTask?.cancel()
         generationTask = Task {
             await orchestrator.generate(config: config)

@@ -43,13 +43,35 @@ struct PromptView: View {
                     .pickerStyle(.segmented)
                 }
 
-                optionSection(title: "Voz (ElevenLabs)") {
-                    Picker("Voz", selection: $viewModel.selectedVoiceID) {
-                        ForEach(ElevenLabsVoice.presets) { voice in
-                            Text(voice.name).tag(voice.id)
+                optionSection(title: "Narración") {
+                    Picker("Motor de voz", selection: $viewModel.selectedVoiceProvider) {
+                        ForEach(VoiceProvider.allCases) { provider in
+                            Text(provider.label).tag(provider)
                         }
                     }
-                    .pickerStyle(.menu)
+                    .pickerStyle(.segmented)
+
+                    if viewModel.selectedVoiceProvider == .system {
+                        Picker("Voz del iPhone", selection: $viewModel.selectedSystemVoiceID) {
+                            ForEach(SystemVoice.options(preferredLanguage: viewModel.config.language)) { voice in
+                                Text(voice.name).tag(voice.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        Text("Gratis, sin API key. Se genera en tu iPhone.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Voz ElevenLabs", selection: $viewModel.selectedElevenLabsVoiceID) {
+                            ForEach(ElevenLabsVoice.presets) { voice in
+                                Text(voice.name).tag(voice.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        Text("Requiere cuenta de pago en ElevenLabs. Si falla, usa voz del iPhone.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 if let error = viewModel.progress.error {
@@ -86,7 +108,7 @@ struct PromptView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("NVIDIA NIM → guion y escenas", systemImage: "brain")
             Label("Pexels / Unsplash → imágenes", systemImage: "photo.on.rectangle")
-            Label("ElevenLabs → narración", systemImage: "waveform")
+            Label("Voz del iPhone (gratis) o ElevenLabs", systemImage: "waveform")
             Label("FFmpeg on-device → export final", systemImage: "film")
         }
         .font(.footnote)

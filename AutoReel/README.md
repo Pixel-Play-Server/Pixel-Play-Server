@@ -4,7 +4,7 @@ Generador automático de reels para iOS. Escribes un tema y la app hace todo:
 
 1. **NVIDIA NIM** genera guion, escenas y keywords de búsqueda
 2. **Pexels / Unsplash** descargan fotos de internet automáticamente
-3. **ElevenLabs** sintetiza la narración
+3. **Voz del iPhone** (gratis) o **ElevenLabs** (opcional, de pago) sintetiza la narración
 4. **FFmpeg en el iPhone** monta el video (Ken Burns, subtítulos, export 9:16)
 
 ## Requisitos
@@ -13,7 +13,7 @@ Generador automático de reels para iOS. Escribes un tema y la app hace todo:
 - iPhone físico recomendado para ejecutar (FFmpeg es pesado en simulador)
 - API keys:
   - [NVIDIA Build](https://build.nvidia.com) (NIM) — la app elige el mejor modelo automáticamente (Llama 3.3, GLM-5.2, Nemotron…) con streaming para evitar timeouts
-  - [ElevenLabs](https://elevenlabs.io)
+  - [ElevenLabs](https://elevenlabs.io) (opcional — la voz por defecto es gratis en el iPhone)
   - [Pexels](https://www.pexels.com/api/)
   - [Unsplash](https://unsplash.com/developers) (opcional, fallback)
 
@@ -87,7 +87,7 @@ NVIDIA NIM → JSON con escenas + image_query en inglés
       ↓
 Pexels API → descarga fotos (IA elige la mejor)
       ↓
-ElevenLabs → narration.mp3
+Voz iPhone / ElevenLabs → narration
       ↓
 FFmpegKit (on-device)
   ├── imagen → clip con zoompan (Ken Burns)
@@ -105,7 +105,7 @@ AutoReel/
 ├── Services/
 │   ├── AI/           NIMClient, AIOrchestrator
 │   ├── Media/        Pexels, Unsplash, ImageFetcher
-│   ├── Voice/        ElevenLabsClient
+│   ├── Voice/        SystemTTSClient, ElevenLabsClient, VoiceSynthesisService
 │   └── Video/        FFmpegService, VideoPipeline, SubtitleGenerator
 ├── ViewModels/
 └── Views/            Prompt, Progress, Preview, Settings
