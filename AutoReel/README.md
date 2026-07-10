@@ -52,38 +52,9 @@ Si tu Mac no soporta Xcode reciente, el workflow [`.github/workflows/ios-build.y
 
 **Ejecución manual:** en GitHub → Actions → *iOS Build (AutoReel)* → *Run workflow*.
 
-Tras un build exitoso en push, el IPA aparece en **Releases** (arriba). También hay artefacto `AutoReel-ipa` en Actions como respaldo.
+Tras un build exitoso en push, el IPA aparece en **Releases** (arriba). También hay artefacto `AutoReel-unsigned-ipa` en Actions como respaldo.
 
-> El CI embebe y firma todos los frameworks de FFmpegKit dentro del `.app`. Sin esto, la app crashea al abrir (`dyld: Library not loaded`).
-
-### Firma con tu certificado (.p12) — usar Secrets, NO el repo
-
-**No subas el `.p12` al repositorio.** Contiene tu clave privada; cualquiera con acceso al repo podría firmar apps en tu nombre.
-
-Configura estos **GitHub Secrets** (Settings → Secrets and variables → Actions):
-
-| Secret | Valor |
-|--------|--------|
-| `IOS_CERTIFICATE_P12_BASE64` | Tu `.p12` en base64 (ver abajo) |
-| `IOS_CERTIFICATE_PASSWORD` | Contraseña del export del .p12 |
-| `IOS_PROVISIONING_PROFILE_BASE64` | Perfil `.mobileprovision` en base64 |
-
-También necesitas un **perfil de aprovisionamiento** para el bundle ID `com.autoreel.app` con tu iPhone registrado. Créalo en [developer.apple.com](https://developer.apple.com) → Certificates, Identifiers & Profiles.
-
-**Convertir archivos a base64** (en Linux/Mac):
-
-```bash
-base64 -w 0 tu_certificado.p12
-base64 -w 0 tu_perfil.mobileprovision
-```
-
-En macOS sin `-w 0`:
-
-```bash
-base64 -i tu_certificado.p12 | tr -d '\n'
-```
-
-Si los tres secrets están configurados, el CI firma el IPA automáticamente. Si no, genera un IPA ad-hoc para SideStore como antes.
+> El CI embebe y firma ad-hoc todos los frameworks de FFmpegKit dentro del `.app`. Sin esto, la app crashea al abrir (`dyld: Library not loaded`). SideStore vuelve a firmar el IPA con tu Apple ID al instalarlo — no hace falta certificado `.p12` en el CI.
 
 ### Si crashea al iniciar
 
