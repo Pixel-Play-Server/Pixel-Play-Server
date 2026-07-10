@@ -19,7 +19,7 @@ final class AIOrchestrator: ObservableObject {
 
             AppLogger.log("Paso 1/4: generando guion con NVIDIA NIM (modelo auto)")
             let script = try await TaskTimeout.run(seconds: 240, step: "guion NVIDIA") {
-                try await nim.generateScript(config: config)
+                try await self.nim.generateScript(config: config)
             }
             try Task.checkCancellation()
 
