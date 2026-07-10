@@ -62,6 +62,16 @@ jobs:
       - name: Generar proyecto Xcode
         run: xcodegen generate
 
+      - name: Leer versión de la app
+        id: app_version
+        run: |
+          PLIST=AutoReel/Resources/Info.plist
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$PLIST")
+          BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$PLIST")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "App v$VERSION (build $BUILD)"
+
       - name: Resolver dependencias SPM
         run: |
           xcodebuild -resolvePackageDependencies \
@@ -94,15 +104,6 @@ jobs:
           fi
           chmod +x scripts/embed-frameworks.sh
           ./scripts/embed-frameworks.sh "$APP_PATH" "$DERIVED_DATA"
-
-      - name: Leer versión de la app
-        id: app_version
-        run: |
-          VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" AutoReel/Resources/Info.plist)
-          BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" AutoReel/Resources/Info.plist)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
-          echo "App v$VERSION (build $BUILD)"
 
       - name: Empaquetar IPA sin firmar (SideStore)
         run: |
