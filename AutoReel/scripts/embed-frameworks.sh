@@ -63,12 +63,19 @@ if [ "$missing" -eq 1 ]; then
   exit 1
 fi
 
-echo ""
-echo "Firmando ad-hoc (codesign -)…"
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+if [ "$SIGN_IDENTITY" = "-" ]; then
+  echo ""
+  echo "Firmando ad-hoc (codesign -)…"
+else
+  echo ""
+  echo "Firmando con identidad: $SIGN_IDENTITY"
+fi
+
 while IFS= read -r fw; do
-  /usr/bin/codesign --force --sign - --timestamp=none "$fw"
+  /usr/bin/codesign --force --sign "$SIGN_IDENTITY" --timestamp=none "$fw"
 done < <(find "$FRAMEWORKS_DIR" -maxdepth 1 -name "*.framework" -type d)
 
-/usr/bin/codesign --force --sign - --timestamp=none "$APP_PATH"
+/usr/bin/codesign --force --sign "$SIGN_IDENTITY" --timestamp=none "$APP_PATH"
 
 echo "Listo: $(find "$FRAMEWORKS_DIR" -maxdepth 1 -name '*.framework' | wc -l | tr -d ' ') frameworks embebidos."

@@ -1,0 +1,8 @@
+# Certificados y perfiles iOS — NUNCA subir al repo
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+*.pem
+ios-signing/
+signing/

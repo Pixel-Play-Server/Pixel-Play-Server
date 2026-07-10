@@ -1,3 +1,7 @@
 AutoReel/DerivedData/
 build-artifact/
 xcodebuild*.log
+*.p12
+*.mobileprovision
+*.cer
+signing/

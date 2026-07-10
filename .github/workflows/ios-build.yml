@@ -72,6 +72,17 @@ jobs:
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
           echo "App v$VERSION (build $BUILD)"
 
+      - name: Importar certificado y perfil (Secrets)
+        id: signing
+        if: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 != '' }}
+        env:
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          chmod +x scripts/import-signing.sh
+          ./scripts/import-signing.sh
+
       - name: Resolver dependencias SPM
         run: |
           xcodebuild -resolvePackageDependencies \
@@ -79,7 +90,25 @@ jobs:
             -scheme AutoReel \
             -derivedDataPath "$DERIVED_DATA"
 
-      - name: Compilar para iPhone (arm64, ad-hoc)
+      - name: Compilar para iPhone (firmado)
+        if: steps.signing.outcome == 'success'
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project AutoReel.xcodeproj \
+            -scheme AutoReel \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$DERIVED_DATA" \
+            ARCHS=arm64 \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="${{ steps.signing.outputs.team_id }}" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ steps.signing.outputs.profile_uuid }}" \
+            CODE_SIGN_IDENTITY="${{ steps.signing.outputs.sign_identity }}" \
+            | tee xcodebuild-device.log | xcbeautify --renderer github-actions
+
+      - name: Compilar para iPhone (ad-hoc, sin certificado)
+        if: steps.signing.outcome != 'success'
         run: |
           set -o pipefail
           xcodebuild build \
@@ -96,6 +125,8 @@ jobs:
             | tee xcodebuild-device.log | xcbeautify --renderer github-actions
 
       - name: Embeber frameworks FFmpeg (fix crash al iniciar)
+        env:
+          SIGN_IDENTITY: ${{ steps.signing.outputs.sign_identity || '-' }}
         run: |
           APP_PATH=$(find "$DERIVED_DATA/Build/Products" -path '*Release-iphoneos/AutoReel.app' -type d | head -n 1)
           if [ -z "$APP_PATH" ]; then
@@ -105,7 +136,7 @@ jobs:
           chmod +x scripts/embed-frameworks.sh
           ./scripts/embed-frameworks.sh "$APP_PATH" "$DERIVED_DATA"
 
-      - name: Empaquetar IPA sin firmar (SideStore)
+      - name: Empaquetar IPA
         run: |
           APP_PATH=$(find "$DERIVED_DATA/Build/Products" -path '*Release-iphoneos/AutoReel.app' -type d | head -n 1)
           mkdir -p build-artifact/Payload
@@ -119,7 +150,7 @@ jobs:
       - name: Publicar artefacto Actions (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: AutoReel-unsigned-ipa
+          name: AutoReel-ipa
           path: AutoReel/build-artifact/${{ env.ipa_name }}
           retention-days: 14
 
@@ -132,12 +163,13 @@ jobs:
           body: |
             ## AutoReel para iPhone (SideStore)
 
-            IPA sin firmar listo para instalar con [SideStore](https://sidestore.io/).
+            ${{ steps.signing.outcome == 'success' && 'IPA **firmado** con tu certificado de desarrollo.' || 'IPA sin firmar (ad-hoc). Instalar con [SideStore](https://sidestore.io/).' }}
 
             | | |
             |---|---|
             | **Versión** | ${{ steps.app_version.outputs.version }} |
             | **Build** | ${{ steps.app_version.outputs.build }} |
+            | **Firma** | ${{ steps.signing.outcome == 'success' && 'Certificado (Secrets)' || 'Ad-hoc / SideStore' }} |
             | **Commit** | `${{ github.sha }}` |
 
             ### Instalar en iPhone
