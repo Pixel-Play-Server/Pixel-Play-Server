@@ -31,6 +31,19 @@ xcodegen generate
 open AutoReel.xcodeproj
 ```
 
+## Descargar en iPhone (sin PC)
+
+Tras cada build exitoso en `main` o ramas `cursor/**`, se publica un **GitHub Release** con el IPA:
+
+**https://github.com/Pixel-Play-Server/Pixel-Play-Server/releases**
+
+1. Abre el enlace en Safari (o app **GitHub**)
+2. Entra al release marcado como **Latest**
+3. Descarga `AutoReel-v1.0-bX.ipa`
+4. **Archivos** → mantén pulsado → **Compartir** → **SideStore**
+
+> Los artefactos de Actions a veces no se descargan en iPhone; los **Releases** sí.
+
 ## Compilar sin Mac reciente (GitHub Actions)
 
 Si tu Mac no soporta Xcode reciente, el workflow [`.github/workflows/ios-build.yml`](../.github/workflows/ios-build.yml) compila en los runners de GitHub (`macos-15` + Xcode estable más reciente).
@@ -39,7 +52,7 @@ Si tu Mac no soporta Xcode reciente, el workflow [`.github/workflows/ios-build.y
 
 **Ejecución manual:** en GitHub → Actions → *iOS Build (AutoReel)* → *Run workflow*.
 
-Tras un build exitoso, descarga el artefacto **`AutoReel-unsigned-ipa`** y fírmalo con [SideStore](https://sidestore.io/) en tu iPhone.
+Tras un build exitoso en push, el IPA aparece en **Releases** (arriba). También hay artefacto `AutoReel-unsigned-ipa` en Actions como respaldo.
 
 > El CI embebe y firma ad-hoc todos los frameworks de FFmpegKit dentro del `.app`. Sin esto, la app crashea al abrir (`dyld: Library not loaded`).
 

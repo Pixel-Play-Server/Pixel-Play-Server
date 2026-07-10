@@ -16,6 +16,9 @@ concurrency:
   group: ios-build-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Compilar AutoReel
@@ -92,21 +95,58 @@ jobs:
           chmod +x scripts/embed-frameworks.sh
           ./scripts/embed-frameworks.sh "$APP_PATH" "$DERIVED_DATA"
 
+      - name: Leer versión de la app
+        id: app_version
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" AutoReel/Resources/Info.plist)
+          BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" AutoReel/Resources/Info.plist)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "App v$VERSION (build $BUILD)"
+
       - name: Empaquetar IPA sin firmar (SideStore)
         run: |
           APP_PATH=$(find "$DERIVED_DATA/Build/Products" -path '*Release-iphoneos/AutoReel.app' -type d | head -n 1)
           mkdir -p build-artifact/Payload
           cp -R "$APP_PATH" build-artifact/Payload/
           cd build-artifact
-          zip -r AutoReel-unsigned.ipa Payload
-          echo "IPA listo (build 2+ con frameworks embebidos)"
+          IPA_NAME="AutoReel-v${{ steps.app_version.outputs.version }}-b${{ steps.app_version.outputs.build }}.ipa"
+          zip -r "$IPA_NAME" Payload
+          echo "ipa_name=$IPA_NAME" >> "$GITHUB_ENV"
+          echo "IPA listo: $IPA_NAME"
 
-      - name: Publicar IPA sin firmar
+      - name: Publicar artefacto Actions (backup)
         uses: actions/upload-artifact@v4
         with:
           name: AutoReel-unsigned-ipa
-          path: AutoReel/build-artifact/AutoReel-unsigned.ipa
+          path: AutoReel/build-artifact/${{ env.ipa_name }}
           retention-days: 14
+
+      - name: Publicar GitHub Release (descarga en iPhone)
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-v${{ steps.app_version.outputs.version }}-b${{ steps.app_version.outputs.build }}-r${{ github.run_number }}
+          name: AutoReel iOS v${{ steps.app_version.outputs.version }} (build ${{ steps.app_version.outputs.build }})
+          body: |
+            ## AutoReel para iPhone (SideStore)
+
+            IPA sin firmar listo para instalar con [SideStore](https://sidestore.io/).
+
+            | | |
+            |---|---|
+            | **Versión** | ${{ steps.app_version.outputs.version }} |
+            | **Build** | ${{ steps.app_version.outputs.build }} |
+            | **Commit** | `${{ github.sha }}` |
+
+            ### Instalar en iPhone
+            1. Descarga **`${{ env.ipa_name }}`** abajo
+            2. Abre con **Archivos** → Compartir → **SideStore**
+
+            > El release más reciente (Latest) siempre es el build actual.
+          prerelease: true
+          make_latest: true
+          files: AutoReel/build-artifact/${{ env.ipa_name }}
 
       - name: Subir logs si falla
         if: failure()
