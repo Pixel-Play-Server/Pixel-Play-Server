@@ -12,7 +12,7 @@ Generador automático de reels para iOS. Escribes un tema y la app hace todo:
 - macOS con Xcode 16+ **o** compilar en CI con GitHub Actions (ver abajo)
 - iPhone físico recomendado para ejecutar (FFmpeg es pesado en simulador)
 - API keys:
-  - [NVIDIA Build](https://build.nvidia.com) (NIM)
+  - [NVIDIA Build](https://build.nvidia.com) (NIM) — la app elige el mejor modelo automáticamente (Llama 3.3, GLM-5.2, Nemotron…) con streaming para evitar timeouts
   - [ElevenLabs](https://elevenlabs.io)
   - [Pexels](https://www.pexels.com/api/)
   - [Unsplash](https://unsplash.com/developers) (opcional, fallback)

@@ -15,7 +15,7 @@ final class AIOrchestrator: ObservableObject {
         progress = GenerationProgress(step: .generatingScript, progress: 0.05, message: "La IA escribe el guion…")
 
         do {
-            AppLogger.log("Paso 1/4: generando guion con NVIDIA NIM")
+            AppLogger.log("Paso 1/4: generando guion con NVIDIA NIM (modelo auto)")
             let script = try await nim.generateScript(config: config)
             AppLogger.log("Guion OK: \(script.scenes.count) escenas, título: \(script.title)")
             progress.script = script
