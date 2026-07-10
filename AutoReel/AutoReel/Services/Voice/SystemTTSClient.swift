@@ -5,6 +5,7 @@ enum SystemTTSError: LocalizedError {
     case noVoiceAvailable
     case synthesisFailed(String)
     case noAudioGenerated
+    case timedOut
 
     var errorDescription: String? {
         switch self {
@@ -14,6 +15,8 @@ enum SystemTTSError: LocalizedError {
             return "Error generando voz en el iPhone: \(detail)"
         case .noAudioGenerated:
             return "La voz del sistema no generó audio"
+        case .timedOut:
+            return "La síntesis de voz tardó demasiado"
         }
     }
 }
@@ -53,42 +56,76 @@ struct SystemVoice: Identifiable, Hashable {
     }
 }
 
-/// Mantiene vivo el sintetizador hasta que termine (requerido por AVSpeechSynthesizer.write).
+/// Retiene el sintetizador hasta completar (requerido por AVSpeechSynthesizer.write).
 @MainActor
-private final class LegacySpeechWriter: NSObject {
+private final class SpeechWriter: NSObject {
     private let synthesizer = AVSpeechSynthesizer()
+    private var audioFile: AVAudioFile?
+    private var continuation: CheckedContinuation<Void, Error>?
+    private var finished = false
+    private var idleTask: Task<Void, Never>?
 
-    func write(utterance: AVSpeechUtterance, to outputURL: URL) async throws {
+    func write(utterance: AVSpeechUtterance, to outputURL: URL, timeout: TimeInterval = 120) async throws {
+        try? FileManager.default.removeItem(at: outputURL)
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var audioFile: AVAudioFile?
-            var finished = false
+            self.continuation = continuation
+            self.finished = false
+            self.audioFile = nil
 
-            synthesizer.write(utterance) { buffer in
-                guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+            idleTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                self.finishIfNeeded(success: self.audioFile != nil, error: SystemTTSError.timedOut)
+            }
 
-                if pcmBuffer.frameLength == 0 {
-                    guard !finished else { return }
-                    finished = true
-                    if audioFile != nil {
-                        continuation.resume()
-                    } else {
-                        continuation.resume(throwing: SystemTTSError.noAudioGenerated)
-                    }
-                    return
-                }
-
-                do {
-                    if audioFile == nil {
-                        audioFile = try AVAudioFile(forWriting: outputURL, settings: pcmBuffer.format.settings)
-                    }
-                    try audioFile?.write(from: pcmBuffer)
-                } catch {
-                    guard !finished else { return }
-                    finished = true
-                    continuation.resume(throwing: SystemTTSError.synthesisFailed(error.localizedDescription))
+            synthesizer.write(utterance) { [weak self] buffer in
+                Task { @MainActor in
+                    self?.handle(buffer: buffer, outputURL: outputURL)
                 }
             }
         }
+    }
+
+    private func handle(buffer: AVAudioBuffer, outputURL: URL) {
+        guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+
+        if pcmBuffer.frameLength == 0 {
+            finishIfNeeded(success: audioFile != nil, error: SystemTTSError.noAudioGenerated)
+            return
+        }
+
+        do {
+            if audioFile == nil {
+                audioFile = try AVAudioFile(forWriting: outputURL, settings: pcmBuffer.format.settings)
+            }
+            try audioFile?.write(from: pcmBuffer)
+            scheduleIdleCompletion()
+        } catch {
+            finishIfNeeded(success: false, error: SystemTTSError.synthesisFailed(error.localizedDescription))
+        }
+    }
+
+    /// En iOS reciente a veces no llega buffer vacío; cerramos tras breve inactividad con audio.
+    private func scheduleIdleCompletion() {
+        idleTask?.cancel()
+        idleTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            self.finishIfNeeded(success: self.audioFile != nil, error: SystemTTSError.noAudioGenerated)
+        }
+    }
+
+    private func finishIfNeeded(success: Bool, error: Error) {
+        guard !finished else { return }
+        finished = true
+        idleTask?.cancel()
+        idleTask = nil
+
+        if success {
+            continuation?.resume()
+        } else {
+            continuation?.resume(throwing: error)
+        }
+        continuation = nil
     }
 }
 
@@ -116,28 +153,20 @@ struct SystemTTSClient: Sendable {
         let outputURL = MediaCache.projectDirectory(id: projectID).appendingPathComponent("narration.caf")
         try? FileManager.default.removeItem(at: outputURL)
 
-        let utterance = makeUtterance(text: trimmed, voiceID: voiceID, language: language)
-        guard utterance.voice != nil else {
-            throw SystemTTSError.noVoiceAvailable
-        }
-        let voiceName = utterance.voice?.name ?? voiceID
-        AppLogger.log("Voz del sistema: \(voiceName) | \(trimmed.count) caracteres")
+        let chunks = splitForSynthesis(trimmed, maxLength: 320)
+        AppLogger.log("Sintetizando \(chunks.count) fragmento(s) de voz…")
 
         let started = Date()
 
-        if #available(iOS 17.0, *) {
-            let synthesizer = AVSpeechSynthesizer()
-            let chunks = splitForSynthesis(trimmed, maxLength: 320)
-            AppLogger.log("Sintetizando \(chunks.count) fragmento(s)…")
+        if chunks.count == 1 {
+            let utterance = makeUtterance(text: trimmed, voiceID: voiceID, language: language)
+            guard utterance.voice != nil else { throw SystemTTSError.noVoiceAvailable }
+            AppLogger.log("Voz del sistema: \(utterance.voice?.name ?? voiceID) | \(trimmed.count) caracteres")
 
-            if chunks.count == 1 {
-                try await synthesizer.write(utterance, to: outputURL)
-            } else {
-                try await synthesizeChunks(chunks, voiceID: voiceID, language: language, outputURL: outputURL)
-            }
-        } else {
-            let writer = LegacySpeechWriter()
+            let writer = SpeechWriter()
             try await writer.write(utterance: utterance, to: outputURL)
+        } else {
+            try await synthesizeChunks(chunks, voiceID: voiceID, language: language, outputURL: outputURL)
         }
 
         guard FileManager.default.fileExists(atPath: outputURL.path) else {
@@ -150,7 +179,6 @@ struct SystemTTSClient: Sendable {
         return outputURL
     }
 
-    @available(iOS 17.0, *)
     @MainActor
     private func synthesizeChunks(
         _ chunks: [String],
@@ -163,10 +191,11 @@ struct SystemTTSClient: Sendable {
 
         for (index, chunk) in chunks.enumerated() {
             let partURL = workDir.appendingPathComponent("narration_part_\(index).caf")
-            try? FileManager.default.removeItem(at: partURL)
             let utterance = makeUtterance(text: chunk, voiceID: voiceID, language: language)
-            let synthesizer = AVSpeechSynthesizer()
-            try await synthesizer.write(utterance, to: partURL)
+            guard utterance.voice != nil else { throw SystemTTSError.noVoiceAvailable }
+
+            let writer = SpeechWriter()
+            try await writer.write(utterance: utterance, to: partURL)
             partURLs.append(partURL)
             AppLogger.log("Fragmento voz \(index + 1)/\(chunks.count) listo")
         }
