@@ -42,14 +42,16 @@ struct NIMChatClient: Sendable {
 
         var lastError: Error?
         for model in NIMModels.candidates(for: task) {
+            let modelMaxTokens = NIMModels.maxOutputTokens(for: model, task: task)
+            let effectiveMaxTokens = min(maxTokens, modelMaxTokens)
             do {
-                AppLogger.log("NVIDIA NIM intentando modelo: \(model)")
+                AppLogger.log("NVIDIA NIM intentando modelo: \(model) (max_tokens: \(effectiveMaxTokens))")
                 let content = try await streamChat(
                     apiKey: apiKey,
                     model: model,
                     messages: messages,
                     temperature: temperature,
-                    maxTokens: maxTokens,
+                    maxTokens: effectiveMaxTokens,
                     seed: seed
                 )
                 AppLogger.log("NVIDIA NIM OK con modelo: \(model) (\(content.count) chars)")
@@ -174,7 +176,7 @@ struct NIMClient: Sendable {
                 ["role": "user", "content": userPrompt]
             ],
             temperature: 0.7,
-            maxTokens: 4096
+            maxTokens: 2048
         )
 
         return try parseScriptJSON(content)

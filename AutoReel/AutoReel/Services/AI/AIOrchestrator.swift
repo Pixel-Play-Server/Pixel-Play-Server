@@ -12,13 +12,13 @@ final class AIOrchestrator: ObservableObject {
     func generate(config: GenerationConfig) async {
         let projectID = UUID().uuidString
         AppLogger.log("Generación iniciada | tema: \(config.topic) | \(config.duration.label) | \(config.format.label)")
-        progress = GenerationProgress(step: .generatingScript, progress: 0.05, message: "La IA escribe el guion…")
+        progress = GenerationProgress(step: .generatingScript, progress: 0.05, message: "La IA escribe el guion… No cierres la app.")
 
         do {
             try Task.checkCancellation()
 
             AppLogger.log("Paso 1/4: generando guion con NVIDIA NIM (modelo auto)")
-            let script = try await TaskTimeout.run(seconds: 240, step: "guion NVIDIA") {
+            let script = try await TaskTimeout.run(seconds: 300, step: "guion NVIDIA") {
                 try await self.nim.generateScript(config: config)
             }
             try Task.checkCancellation()

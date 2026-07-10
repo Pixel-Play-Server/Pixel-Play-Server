@@ -29,4 +29,16 @@ enum NIMModels {
         case .imageRanking: return imageRanking
         }
     }
+
+    /// Límite de tokens de salida según contexto del modelo (evita HTTP 400 en modelos pequeños).
+    static func maxOutputTokens(for model: String, task: Task) -> Int {
+        switch task {
+        case .scriptGeneration:
+            if model.contains("nemotron-mini") { return 896 }
+            if model.contains("8b-instruct") { return 1536 }
+            return 2048
+        case .imageRanking:
+            return 16
+        }
+    }
 }
